@@ -7,7 +7,7 @@ USAGE: https://spacy.io/usage/visualizers
 """
 from __future__ import unicode_literals
 
-from .render import DependencyRenderer, EntityRenderer
+from .render import DependencyRenderer, EntityRenderer, POSRenderer
 from ..tokens import Doc, Span
 from ..compat import b_to_str
 from ..errors import Errors, Warnings, user_warning
@@ -38,6 +38,7 @@ def render(
     factories = {
         "dep": (DependencyRenderer, parse_deps),
         "ent": (EntityRenderer, parse_ents),
+        "pos": (POSRenderer, parse_pos),
     }
     if style not in factories:
         raise ValueError(Errors.E087.format(style=style))
@@ -180,6 +181,22 @@ def parse_ents(doc, options={}):
     title = doc.user_data.get("title", None) if hasattr(doc, "user_data") else None
     settings = get_doc_settings(doc)
     return {"text": doc.text, "ents": ents, "title": title, "settings": settings}
+
+def parse_pos(doc, options={}):
+    """Generate named entities in [{start: i, end: i, label: 'label'}] format.
+
+    doc (Doc): Document do parse.
+    RETURNS (dict): Generated entities keyed by text (original text) and ents.
+    """
+    poss = [
+        {"start": token.idx, "end": token.idx + len(token.text), "label": token.pos_}
+        for token in doc
+    ]
+    if not poss:
+        user_warning(Warnings.W006)
+    title = doc.user_data.get("title", None) if hasattr(doc, "user_data") else None
+    settings = get_doc_settings(doc)
+    return {"text": doc.text, "pos": poss, "title": title, "settings": settings}
 
 
 def set_render_wrapper(func):
